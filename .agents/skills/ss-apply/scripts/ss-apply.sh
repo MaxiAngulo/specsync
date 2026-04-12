@@ -202,6 +202,23 @@ for i in "${!proposal_source_roots[@]}"; do
   overlay_directory "$proposal_root_dir" "$destination"
 done
 
+deletions_file="$proposal_dir/deletions.txt"
+if [[ -f "$deletions_file" ]]; then
+  while IFS= read -r deletion_path || [[ -n "$deletion_path" ]]; do
+    deletion_path="${deletion_path%%#*}"
+    deletion_path="${deletion_path//[[:space:]]/}"
+    [[ -z "$deletion_path" ]] && continue
+    if [[ "$deletion_path" == *..* ]] || [[ "$deletion_path" = /* ]] || [[ "$deletion_path" =~ ^[A-Za-z]:[\\/].* ]]; then
+      echo "Skipping unsafe path in deletions.txt: $deletion_path" >&2
+      continue
+    fi
+    live_file="$repo_root/$deletion_path"
+    if [[ -f "$live_file" ]]; then
+      rm -f "$live_file"
+    fi
+  done < "$deletions_file"
+fi
+
 if [[ ${#proposal_source_roots[@]} -gt 0 ]]; then
   manifest_args=()
   for source_root in "${proposal_source_roots[@]}"; do

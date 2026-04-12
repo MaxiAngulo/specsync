@@ -9,6 +9,8 @@ Use this skill for implementation work inside the configured source roots from `
 
 When a proposal is bound to the current agent session, prefer editing mirrored source paths directly inside that proposal folder. Use `<source-root>/<matching-path>` for relative configured roots and `<root-key>/<matching-path>` for absolute or external roots. Resolve the proposal folder from `.specsync/sessions/<session-id>.json`, using `SPECSYNC_SESSION_ID` as the default session id when available. Only the apply step should write back into the configured source roots.
 
+To mark a file for deletion in a proposal, add its repo-relative path to `deletions.txt` in the proposal folder root (e.g. `src/old-feature/handler.js`). One path per line; blank lines and lines starting with `#` are ignored. The apply step will delete each listed file from the live source root. Do not use absolute paths or `..` path segments in `deletions.txt`.
+
 Also load `.specsync/skills/_shared/specsync-governance.md` when implementation changes may affect managed documentation or proposal routing.
 
 ## Scope

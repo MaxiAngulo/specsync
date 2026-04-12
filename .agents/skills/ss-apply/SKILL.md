@@ -18,6 +18,7 @@ The skill must:
 - overlay `specs/<matching-path>` deltas into `specs`
 - refuse to apply proposal-folder source changes when the live configured source roots no longer match `source-state.txt`
 - overlay each proposal-folder source delta into its configured source root from `.specsync/source-roots.txt`
+- process `deletions.txt` (if present) to remove files from live `specs/` or source roots after overlaying; skip blank lines and `#` comments; reject entries containing `..` or absolute paths
 - update `apply-summary.md`
 
 Resolve the session id from `SPECSYNC_SESSION_ID` when available. The host runtime may also expose another session env var. Only require an explicit session id when no runtime session id is available.

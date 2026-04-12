@@ -35,6 +35,28 @@ function Get-StoredProposalPath {
     return $normalizedProposalDir.Replace('\', '/')
 }
 
+function Get-SourceRoots {
+    param([string]$FilePath)
+    if (-not (Test-Path -LiteralPath $FilePath)) { return @('src') }
+    $roots = Get-Content -LiteralPath $FilePath | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    if (-not $roots) { return @('src') }
+    return $roots
+}
+
+function Get-RootKey {
+    param([string]$Root)
+    return (($Root -replace '[:\\/ ]+', '__') -replace '[^A-Za-z0-9._-]', '_').Trim('_')
+}
+
+function Get-ProposalSourceDir {
+    param([string]$ProposalDir, [string]$SourceRoot)
+    if ([System.IO.Path]::IsPathRooted($SourceRoot)) {
+        return (Join-Path $ProposalDir (Get-RootKey -Root $SourceRoot))
+    }
+    $normalized = $SourceRoot -replace '[\\/]+', '\'
+    return (Join-Path $ProposalDir $normalized)
+}
+
 function Get-SessionProposalPath {
     param(
         [string]$SessionFile
@@ -95,24 +117,106 @@ if (Test-Path -LiteralPath $destination) {
     throw "Archive destination already exists: $destination"
 }
 
-Move-Item -LiteralPath $proposalDir -Destination $destination
+$archivedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+$sourceRootsFile = Join-Path $specsyncDir 'source-roots.txt'
+$gitCmd = Get-Command git -ErrorAction SilentlyContinue
 
-if (Test-Path -LiteralPath (Join-Path $destination "proposal.json")) {
-    $proposalManifest = [ordered]@{
-        proposal_name = $proposalName
-        proposal_path = Get-StoredProposalPath -RepoRoot $repoRoot -ProposalDir $destination
-        status        = "archived"
-        archived_at   = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+if ($gitCmd) {
+    New-Item -ItemType Directory -Force -Path $destination | Out-Null
+
+    $proposalMd = Join-Path $proposalDir 'proposal.md'
+    if (Test-Path -LiteralPath $proposalMd) {
+        Copy-Item -LiteralPath $proposalMd -Destination (Join-Path $destination 'proposal.md') -Force
     }
 
-    $proposalManifest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $destination "proposal.json")
+    $patchFile = Join-Path $destination 'changes.patch'
+    $patchLines = New-Object System.Collections.Generic.List[string]
+
+    function Invoke-GitDiff {
+        param([string]$LiveFile, [string]$ProposalFile)
+        $diffOutput = & git diff --no-index -- $LiveFile $ProposalFile 2>$null
+        if ($LASTEXITCODE -gt 1) {
+            throw "git diff failed with exit code $LASTEXITCODE for: $LiveFile vs $ProposalFile"
+        }
+        if ($diffOutput) {
+            foreach ($line in $diffOutput) { $patchLines.Add($line) }
+        }
+    }
+
+    $proposalSpecsDir = Join-Path $proposalDir 'specs'
+    if (Test-Path -LiteralPath $proposalSpecsDir -PathType Container) {
+        $resolvedSpecsProposalDir = (Resolve-Path -LiteralPath $proposalSpecsDir).Path.TrimEnd('\')
+        $liveSpecsDir = Join-Path $repoRoot 'specs'
+        Get-ChildItem -LiteralPath $proposalSpecsDir -Recurse -File | Sort-Object FullName | ForEach-Object {
+            $relPath = $_.FullName.Substring($resolvedSpecsProposalDir.Length + 1).Replace('\', '/')
+            $liveFile = Join-Path $liveSpecsDir ($relPath -replace '/', '\')
+            if (Test-Path -LiteralPath $liveFile -PathType Leaf) {
+                Invoke-GitDiff -LiveFile $liveFile -ProposalFile $_.FullName
+            } else {
+                Invoke-GitDiff -LiveFile '/dev/null' -ProposalFile $_.FullName
+            }
+        }
+    }
+
+    foreach ($sourceRoot in (Get-SourceRoots -FilePath $sourceRootsFile)) {
+        $proposalRootDir = Get-ProposalSourceDir -ProposalDir $proposalDir -SourceRoot $sourceRoot
+        if (-not (Test-Path -LiteralPath $proposalRootDir -PathType Container)) { continue }
+        $liveRoot = if ([System.IO.Path]::IsPathRooted($sourceRoot)) { $sourceRoot } else { Join-Path $repoRoot $sourceRoot }
+        $resolvedProposalRootDir = (Resolve-Path -LiteralPath $proposalRootDir).Path.TrimEnd('\')
+        Get-ChildItem -LiteralPath $proposalRootDir -Recurse -File | Sort-Object FullName | ForEach-Object {
+            $relPath = $_.FullName.Substring($resolvedProposalRootDir.Length + 1).Replace('\', '/')
+            $liveFile = Join-Path $liveRoot ($relPath -replace '/', '\')
+            if (Test-Path -LiteralPath $liveFile -PathType Leaf) {
+                Invoke-GitDiff -LiveFile $liveFile -ProposalFile $_.FullName
+            } else {
+                Invoke-GitDiff -LiveFile '/dev/null' -ProposalFile $_.FullName
+            }
+        }
+    }
+
+    $deletionsFile = Join-Path $proposalDir 'deletions.txt'
+    if (Test-Path -LiteralPath $deletionsFile) {
+        Get-Content -LiteralPath $deletionsFile | ForEach-Object {
+            $deletionPath = ($_ -replace '#.*$', '').Trim()
+            if (-not $deletionPath) { return }
+            if ($deletionPath -match '\.\.') { return }
+            if ([System.IO.Path]::IsPathRooted($deletionPath)) { return }
+            $liveFile = Join-Path $repoRoot ($deletionPath -replace '/', '\')
+            if (Test-Path -LiteralPath $liveFile -PathType Leaf) {
+                Invoke-GitDiff -LiveFile $liveFile -ProposalFile '/dev/null'
+            }
+        }
+    }
+
+    if ($patchLines.Count -gt 0) {
+        Set-Content -LiteralPath $patchFile -Value $patchLines
+    }
+
+    [ordered]@{
+        proposal_name  = $proposalName
+        proposal_path  = "proposals-archive/$proposalName"
+        status         = 'archived'
+        archive_format = 'patch'
+        archived_at    = $archivedAt
+    } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $destination 'proposal.json')
+
+    Remove-Item -LiteralPath $proposalDir -Recurse -Force
+} else {
+    Move-Item -LiteralPath $proposalDir -Destination $destination
+
+    [ordered]@{
+        proposal_name  = $proposalName
+        proposal_path  = "proposals-archive/$proposalName"
+        status         = 'archived'
+        archive_format = 'folder'
+        archived_at    = $archivedAt
+    } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $destination 'proposal.json')
 }
 
 if (Test-Path -LiteralPath $sessionsDir) {
-    $openProposalPath = Get-StoredProposalPath -RepoRoot $repoRoot -ProposalDir $proposalDir
     Get-ChildItem -LiteralPath $sessionsDir -Filter *.json -File | ForEach-Object {
         $boundProposalPath = Get-SessionProposalPath -SessionFile $_.FullName
-        if ($boundProposalPath -and ($boundProposalPath -eq $openProposalPath -or $boundProposalPath -eq "proposes/$proposalName")) {
+        if ($boundProposalPath -and $boundProposalPath -eq "proposes/$proposalName") {
             Remove-Item -LiteralPath $_.FullName -Force
         }
     }

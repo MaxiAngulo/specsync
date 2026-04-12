@@ -243,6 +243,22 @@ foreach ($rootState in $proposalSourceRoots) {
     Overlay-Directory -Source $rootState.ProposalDir -Destination $rootState.Destination
 }
 
+$deletionsFile = Join-Path $proposalDir "deletions.txt"
+if (Test-Path -LiteralPath $deletionsFile) {
+    Get-Content -LiteralPath $deletionsFile | ForEach-Object {
+        $deletionPath = ($_ -replace '#.*$', '').Trim()
+        if (-not $deletionPath) { return }
+        if ($deletionPath -match '\.\.' -or [System.IO.Path]::IsPathRooted($deletionPath)) {
+            Write-Warning "Skipping unsafe path in deletions.txt: $deletionPath"
+            return
+        }
+        $liveFile = Join-Path $repoRoot ($deletionPath -replace '/', '\')
+        if (Test-Path -LiteralPath $liveFile -PathType Leaf) {
+            Remove-Item -LiteralPath $liveFile -Force
+        }
+    }
+}
+
 if ($proposalSourceRoots.Count -gt 0) {
     $postApplyStates = foreach ($rootState in $proposalSourceRoots) {
         [ordered]@{
