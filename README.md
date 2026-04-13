@@ -1,6 +1,6 @@
 # SpecSync
 
-SpecSync keeps project documentation and code in sync so both development teams and AI agents can work against current project knowledge instead of stale documents.
+SpecSync keeps project's software  documentation and code in sync so both development teams and AI agents can work against current project knowledge.
 
 It is a repository-local workflow, not a hosted service and not a CLI product. You install it by copying the `.agents` and `.specsync` folders into another repository. After that, the repository contains:
 
