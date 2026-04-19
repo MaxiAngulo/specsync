@@ -11,14 +11,17 @@ It is a repository-local workflow, not a hosted service and not a CLI product. Y
 
 ## What It Solves
 
-Software teams often let code and documentation drift apart. SpecSync adds a lightweight workflow that lets people and AI agents:
+Software teams often let code and documentation drift apart because there is no shared unit of change that keeps both in step. SpecSync solves this by making the proposal folder that shared unit, so every change — whether it starts in code or in a document — travels with its counterpart until both sides are promoted together.
 
-- update documentation first and then sync the code
-- update code first and then sync the documentation
-- make a small localized change or a large cross-cutting change
-- stage reviewable changes without depending on Git-specific branching workflows
+Specifically, SpecSync lets people and AI agents:
 
-The workflow is simple and Git-independent. If a repository uses Git, SpecSync works inside it. If a team does not want to model the process around branches or pull requests, SpecSync still works because the unit of change is the proposal folder, not the Git branch.
+- **Keep code and documentation permanently in sync.** A code change propagates into the relevant specs. A documentation change propagates into the relevant source. Neither side can be promoted alone, so drift cannot accumulate silently.
+- **Start from whichever artifact changed first.** If a developer lands a fix before the docs are updated, pull the live state into a proposal and refine the documentation to match. If a product owner updates the requirements first, refine the code delta inside the proposal and then apply both together.
+- **Work at any scale.** A single requirement correction, a screen-copy update, or a one-line validation fix fits the same workflow as a new subsystem, a data-model migration, or a cross-cutting architectural change.
+- **Focus on the resulting artifact, not on process overhead.** There are no mandatory planning documents, no status templates, and no ticket hierarchies. The proposal holds only the spec and source deltas that describe the desired end state.
+- **Collaborate across roles inside a single proposal.** A UI designer, a software architect, a tester, and a product owner can each refine the documents they own — UX, architecture, test plan, requirements — within the same proposal before anything is promoted to the live tree.
+
+The workflow is Git-independent. If a repository uses Git, SpecSync works inside it. If a team does not want to model the process around branches or pull requests, SpecSync still works because the unit of change is the proposal folder, not the Git branch. That said, using SpecSync alongside Git is recommended: applying a proposal on a dedicated branch and reviewing it as a pull request gives the team a natural checkpoint before the promoted changes reach the main line.
 
 ## Installation
 
@@ -80,7 +83,7 @@ The normal flow is:
 1. Initialize the repository with `/ss-init`.
 2. Create a proposal with `/ss-proposal`.
 3. Refine the proposal with `/ss-refine`.
-4. Pull live changes into the proposal with `/ss-pull` when the repository changed outside the proposal.
+4. Pull live changes into the proposal with `/ss-pull` when the repository changed outside the proposal. If the main line has been updated while the proposal was in progress — for example, another proposal was applied or a hotfix was merged — run `/ss-pull` to bring those changes into the proposal workspace before continuing refinement or applying.
 5. Apply the proposal with `/ss-apply`.
 6. Archive the proposal with `/ss-archive`.
 
