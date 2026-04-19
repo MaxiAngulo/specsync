@@ -46,7 +46,7 @@ Example:
 /ss-init
 ```
 
-By default, `.specsync/source-roots.txt` starts with `src`.
+By default, `.specsync/source-roots.txt` starts with `src`. If a `test` or `tests` directory exists at the repository root when `/ss-init` runs, it is appended automatically as an additional source root, so test code is tracked and synchronized alongside production code.
 
 
 ## Claude Code Installation

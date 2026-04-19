@@ -17,5 +17,5 @@ The skill must:
 - copy template documents from `.specsync/templantes` into `specs` when missing
 - ensure `proposes` and `proposals-archive` exist
 - ensure `.specsync/sessions` exists
-- ensure `.specsync/source-roots.txt` exists with `src` as the default source root
+- ensure `.specsync/source-roots.txt` exists with `src` as the default source root; if a `test` or `tests` directory exists at the repository root, append it to the file as an additional source root
 

@@ -28,6 +28,12 @@ Get-ChildItem -Path $templatesDir -Recurse -File | ForEach-Object {
 
 if (-not (Test-Path -LiteralPath $sourceRootsFile)) {
     Set-Content -LiteralPath $sourceRootsFile -Value "src"
+    # Auto-detect common test-code root folders and add them when present
+    foreach ($testDir in @("test", "tests")) {
+        if (Test-Path -LiteralPath (Join-Path $repoRoot $testDir) -PathType Container) {
+            Add-Content -LiteralPath $sourceRootsFile -Value $testDir
+        }
+    }
 }
 
 Write-Output $repoRoot

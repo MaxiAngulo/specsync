@@ -6,7 +6,7 @@ SpecSync keeps software documentation in `specs` and implementation in the confi
 
 - `specs` holds the current approved specification set.
 - `.specsync/templantes` holds the default template pack for initializing or extending that specification set.
-- `.specsync/source-roots.txt` stores one or more configured source-code roots. The default is `src`.
+- `.specsync/source-roots.txt` stores one or more configured source-code roots. The default is `src`. If a `test` or `tests` directory exists at the repository root when `/ss-init` runs, it is added automatically as an additional source root.
 - `.specsync/sessions` stores one session binding file per chat or agent session.
 - `proposes` holds open proposal workspaces.
 - `proposals-archive` holds archived proposals.

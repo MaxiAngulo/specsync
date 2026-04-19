@@ -25,6 +25,12 @@ done < <(find "$templates_dir" -type f -print0)
 
 if [[ ! -e "$source_roots_file" ]]; then
   printf 'src\n' > "$source_roots_file"
+  # Auto-detect common test-code root folders and add them when present
+  for test_dir in test tests; do
+    if [[ -d "$repo_root/$test_dir" ]]; then
+      printf '%s\n' "$test_dir" >> "$source_roots_file"
+    fi
+  done
 fi
 
 printf '%s\n' "$repo_root"
