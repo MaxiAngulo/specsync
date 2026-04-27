@@ -1,0 +1,21 @@
+---
+description: SpecSync agent system — keep all specs and code in sync
+alwaysApply: false
+---
+
+# SpecSync — Cursor Rules
+
+This project uses **SpecSync** to keep all software design artifacts and source code always
+in sync using a team of specialized AI skills.
+
+## When to activate
+
+Only activate when the user's message **explicitly starts with `/ss`**.
+Do not activate for any other request.
+
+## Procedure
+
+**Always start by reading:** `.agents/skills/specsync/SKILL.md`
+
+The full workflow, specialist paths, artifact locations, and rules are defined there. Follow them exactly.
+
