@@ -73,12 +73,14 @@ You: /ss "add user authentication"
 └── adapters/                      ← Copy one of these to activate SpecSync in your tool
     ├── copilot.md                 →  .github/copilot-instructions.md
     ├── claude-code.md             →  CLAUDE.md
+    ├── codex.md                   →  AGENTS.md
+    ├── opencode.md                →  AGENTS.md
     ├── kiro.md                    →  .kiro/steering/specsync.md
     └── cursor.mdc                 →  .cursor/rules/specsync.mdc
 ```
 
 **Skills live in `.agents/skills/`** — a built-in location supported by Copilot CLI,
-Claude Code, and other tools. No configuration needed; skills are auto-discovered.
+Claude Code, Codex, OpenCode, and other tools. No configuration needed; skills are auto-discovered.
 
 ---
 
@@ -103,10 +105,17 @@ Or the full name:
 /specsync add user authentication
 ```
 
+**Codex / OpenCode** — skills are auto-discovered; copy the adapter once to add the activation trigger:
+
+| Tool | Copy this file | To this location |
+|------|---------------|------------------|
+| Codex | `.specsync/adapters/codex.md` | `AGENTS.md` |
+| OpenCode | `.specsync/adapters/opencode.md` | `AGENTS.md` |
+
 **Other tools** — copy the adapter once, then trigger with `/ss`:
 
 | Tool | Copy this file | To this location |
-|------|---------------|-----------------|
+|------|---------------|------------------|
 | GitHub Copilot (chat/IDE) | `.specsync/adapters/copilot.md` | `.github/copilot-instructions.md` |
 | Claude Code | `.specsync/adapters/claude-code.md` | `CLAUDE.md` |
 | Kiro | `.specsync/adapters/kiro.md` | `.kiro/steering/specsync.md` |
